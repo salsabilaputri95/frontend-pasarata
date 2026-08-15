@@ -6,6 +6,7 @@ import { AdminManagementPanel } from '@/components/admin-management';
 import { AssignmentPanel } from '@/components/assignment-panel';
 import { ComparisonPanel } from '@/components/comparison-panel';
 import { EntryReviewPanel } from '@/components/entry-review-panel';
+import { ImportPanel } from '@/components/import-panel';
 import { SummaryPanel } from '@/components/summary-panel';
 import { api } from '@/lib/api';
 
@@ -68,6 +69,10 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="mt-8">
+        <ImportPanel />
+      </div>
+
+      <div className="mt-8">
         <AdminManagementPanel />
       </div>
 
@@ -76,15 +81,6 @@ export default function AdminDashboardPage() {
         <p className="mt-3 text-slate-600">{message}</p>
       </div>
     </DashboardShell>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-      <div className="mt-3">{children}</div>
-    </div>
   );
 }
 

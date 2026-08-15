@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 const DEFAULT_YEAR = new Date().getFullYear();
 
@@ -20,6 +21,18 @@ export function ComparisonPanel() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [year, setYear] = useState(DEFAULT_YEAR);
+  const [marketIdFilter, setMarketIdFilter] = useState('');
+
+  const downloadCsv = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
 
   const loadData = async () => {
     const token = localStorage.getItem('pasarata_token');
@@ -27,14 +40,7 @@ export function ComparisonPanel() {
 
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api'}/admin/comparison?year=${year}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error ?? 'Gagal memuat perbandingan');
-      }
+      const data = await api.comparison(token, year);
 
       setRows(data.data ?? []);
       setMessage(`Perbandingan tahun ${data.year}`);
@@ -48,6 +54,24 @@ export function ComparisonPanel() {
   useEffect(() => {
     loadData();
   }, [year]);
+
+  const handleExport = async () => {
+    const token = localStorage.getItem('pasarata_token');
+    if (!token) return;
+
+    try {
+      const blob = await api.exportReport(token, {
+        scope: 'comparison',
+        format: 'xlsx',
+        year,
+        market_id: marketIdFilter ? Number(marketIdFilter) : undefined,
+      });
+      downloadCsv(blob, `pasarata-comparison-${year}.xlsx`);
+      setMessage(`Export comparison tahun ${year} berhasil (XLSX)`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Gagal export comparison');
+    }
+  };
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -66,6 +90,11 @@ export function ComparisonPanel() {
             className="input w-32"
           />
         </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Filter Market ID</span>
+          <input type="number" min={1} value={marketIdFilter} onChange={(e) => setMarketIdFilter(e.target.value)} className="input w-36" placeholder="opsional" />
+        </label>
+        <button type="button" onClick={handleExport} className="btn-primary h-10 px-4 text-sm">Export Excel (XLSX)</button>
       </div>
 
       {message ? <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-700">{message}</div> : null}

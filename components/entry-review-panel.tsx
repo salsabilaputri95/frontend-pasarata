@@ -19,6 +19,21 @@ export function EntryReviewPanel() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [marketIdFilter, setMarketIdFilter] = useState('');
+  const [collectorIdFilter, setCollectorIdFilter] = useState('');
+  const [warningFilter, setWarningFilter] = useState<'normal' | 'below_minimum' | 'above_maximum' | ''>('');
+
+  const downloadCsv = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
 
   const loadData = async () => {
     const token = localStorage.getItem('pasarata_token');
@@ -44,11 +59,59 @@ export function EntryReviewPanel() {
     loadData();
   }, []);
 
+  const handleExportEntries = async () => {
+    const token = localStorage.getItem('pasarata_token');
+    if (!token) return;
+
+    try {
+      const blob = await api.exportReport(token, {
+        scope: 'entries',
+        format: 'xlsx',
+        year,
+        market_id: marketIdFilter ? Number(marketIdFilter) : undefined,
+        collector_id: collectorIdFilter ? Number(collectorIdFilter) : undefined,
+        warning_status: warningFilter || undefined,
+      });
+      downloadCsv(blob, `pasarata-entries-${year}.xlsx`);
+      setMessage(`Export data mentah tahun ${year} berhasil (XLSX)`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Gagal export data mentah');
+    }
+  };
+
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div>
         <h3 className="text-lg font-bold text-slate-900">Review Data Pendataan</h3>
         <p className="text-sm text-slate-600">Tinjau seluruh entri pendataan, termasuk status warning dan histori perubahan.</p>
+      </div>
+
+      <div>
+        <button type="button" onClick={handleExportEntries} className="btn-primary h-10 px-4 text-sm">Export Data Mentah (CSV)</button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tahun</span>
+          <input type="number" min={2020} value={year} onChange={(e) => setYear(Number(e.target.value) || new Date().getFullYear())} className="input" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Market ID</span>
+          <input type="number" min={1} value={marketIdFilter} onChange={(e) => setMarketIdFilter(e.target.value)} className="input" placeholder="opsional" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Collector ID</span>
+          <input type="number" min={1} value={collectorIdFilter} onChange={(e) => setCollectorIdFilter(e.target.value)} className="input" placeholder="opsional" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Warning</span>
+          <select className="input" value={warningFilter} onChange={(e) => setWarningFilter(e.target.value as 'normal' | 'below_minimum' | 'above_maximum' | '')}>
+            <option value="">Semua</option>
+            <option value="normal">normal</option>
+            <option value="below_minimum">below_minimum</option>
+            <option value="above_maximum">above_maximum</option>
+          </select>
+        </label>
       </div>
 
       {message ? <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">{message}</div> : null}

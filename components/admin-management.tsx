@@ -167,6 +167,50 @@ export function AdminManagementPanel() {
     }
   };
 
+  const toggleCollectorStatus = async (collector: CollectorRecord) => {
+    const token = localStorage.getItem('pasarata_token');
+    if (!token) return;
+    const next = collector.status === 'active' ? 'inactive' : 'active';
+
+    try {
+      await api.setCollectorStatus(token, collector.id, next);
+      setMessage(`Status ${collector.full_name} diubah ke ${next}`);
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Gagal mengubah status pendata');
+    }
+  };
+
+  const resetCollectorPassword = async (collector: CollectorRecord) => {
+    const token = localStorage.getItem('pasarata_token');
+    if (!token) return;
+    const newPassword = window.prompt(`Password baru untuk ${collector.full_name} (min 6 karakter):`);
+    if (!newPassword) return;
+
+    try {
+      await api.resetCollectorPassword(token, collector.id, newPassword);
+      setMessage(`Password ${collector.full_name} berhasil di-reset`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Gagal reset password');
+    }
+  };
+
+  const editCollector = async (collector: CollectorRecord) => {
+    const token = localStorage.getItem('pasarata_token');
+    if (!token) return;
+    const fullName = window.prompt('Nama lengkap baru:', collector.full_name);
+    const username = window.prompt('Username baru:', collector.username);
+    if (!fullName || !username) return;
+
+    try {
+      await api.updateCollector(token, collector.id, { full_name: fullName, username });
+      setMessage(`Data ${collector.full_name} berhasil diperbarui`);
+      await loadData();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Gagal update pendata');
+    }
+  };
+
   return (
     <div className="space-y-8">
       {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
@@ -238,6 +282,11 @@ export function AdminManagementPanel() {
                 <li key={collector.id} className="rounded-lg border border-slate-200 px-3 py-2">
                   <div className="font-semibold">{collector.full_name}</div>
                   <div>@{collector.username} • {collector.status}</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => editCollector(collector)} className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Edit</button>
+                    <button type="button" onClick={() => toggleCollectorStatus(collector)} className="rounded border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50">{collector.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}</button>
+                    <button type="button" onClick={() => resetCollectorPassword(collector)} className="rounded border border-rose-300 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50">Reset Password</button>
+                  </div>
                 </li>
               ))}
             </ul>
