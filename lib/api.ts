@@ -200,7 +200,13 @@ export const api = {
   }) => request<{ message: string; data: DataEntry }>(`/entries/${entryId}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
   deactivateEntry: async (token: string, entryId: number) =>
     request<{ message: string; data: DataEntry }>(`/entries/${entryId}/deactivate`, { method: 'PATCH' }, token),
+  entryAudit: async (
+    token: string,
+    entryId: number,
+  ): Promise<{ data: Array<{ id: number; entry_id: number; user_id: number; action: string; before?: string; after?: string; created_at: string }> }> =>
+    request(`/entries/${entryId}/audit`, {}, token),
   adminDashboard: async (token: string): Promise<AdminSummary> =>
+
     request<AdminSummary>('/admin/dashboard', {}, token),
   createCollector: async (token: string, payload: { username: string; password: string; full_name: string }) =>
     request<{ message: string; data: User }>('/admin/collectors', { method: 'POST', body: JSON.stringify(payload) }, token),
@@ -236,22 +242,119 @@ export const api = {
     request<{ message: string; data: unknown }>(`/admin/units/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   deleteAssignment: async (token: string, id: number) =>
     request<{ message: string }>(`/admin/assignments/${id}`, { method: 'DELETE' }, token),
-  previewImportEntries: async (token: string, file: File, collectorIdDefault?: number) => {
+  inspectImportHeaders: async (token: string, file: File) => {
+
     const formData = new FormData();
     formData.append('file', file);
-    if (collectorIdDefault) {
-      formData.append('collector_id_default', String(collectorIdDefault));
-    }
-    return requestForm<{ total_rows: number; valid_rows: number; errors: Record<string, string[]>; message: string }>('/admin/import/preview', formData, token);
+    return requestForm<{ headers: string[]; sample_rows: string[][]; total_rows: number; message: string }>('/admin/import/headers', formData, token);
   },
-  importEntries: async (token: string, file: File, collectorIdDefault?: number) => {
+  previewImportEntries: async (
+    token: string,
+    file: File,
+    options?: {
+      collectorIdDefault?: number;
+      mapping?: Record<string, string>;
+      defaults?: Record<string, string>;
+    },
+  ) => {
     const formData = new FormData();
     formData.append('file', file);
-    if (collectorIdDefault) {
-      formData.append('collector_id_default', String(collectorIdDefault));
+    if (options?.collectorIdDefault) {
+      formData.append('collector_id_default', String(options.collectorIdDefault));
+    }
+    if (options?.mapping && Object.keys(options.mapping).length > 0) {
+      formData.append('mapping', JSON.stringify(options.mapping));
+    }
+    if (options?.defaults && Object.keys(options.defaults).length > 0) {
+      formData.append('defaults', JSON.stringify(options.defaults));
+    }
+    return requestForm<{
+      total_rows: number;
+      valid_rows: number;
+      errors: Record<string, string[]>;
+      sample_parsed?: Array<Record<string, unknown>>;
+      message: string;
+    }>('/admin/import/preview', formData, token);
+  },
+  importEntries: async (
+    token: string,
+    file: File,
+    options?: {
+      collectorIdDefault?: number;
+      mapping?: Record<string, string>;
+      defaults?: Record<string, string>;
+    },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (options?.collectorIdDefault) {
+      formData.append('collector_id_default', String(options.collectorIdDefault));
+    }
+    if (options?.mapping && Object.keys(options.mapping).length > 0) {
+      formData.append('mapping', JSON.stringify(options.mapping));
+    }
+    if (options?.defaults && Object.keys(options.defaults).length > 0) {
+      formData.append('defaults', JSON.stringify(options.defaults));
     }
     return requestForm<{ message: string; imported_rows: number; skipped_rows: number; validation_logs: Record<string, string[]> }>('/admin/import/commit', formData, token);
   },
+  previewImportMaster: async (
+    token: string,
+    file: File,
+    target: 'commodities' | 'categories' | 'units' | 'markets',
+    options?: {
+      mapping?: Record<string, string>;
+      defaults?: Record<string, string>;
+    },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('target', target);
+    if (options?.mapping && Object.keys(options.mapping).length > 0) {
+      formData.append('mapping', JSON.stringify(options.mapping));
+    }
+    if (options?.defaults && Object.keys(options.defaults).length > 0) {
+      formData.append('defaults', JSON.stringify(options.defaults));
+    }
+    return requestForm<{
+      target: string;
+      total_rows: number;
+      valid_rows: number;
+      new_rows: number;
+      update_rows: number;
+      errors: Record<string, string[]>;
+      sample_parsed?: Array<Record<string, unknown>>;
+      message: string;
+    }>('/admin/import/master/preview', formData, token);
+  },
+  importMaster: async (
+    token: string,
+    file: File,
+    target: 'commodities' | 'categories' | 'units' | 'markets',
+    options?: {
+      mapping?: Record<string, string>;
+      defaults?: Record<string, string>;
+    },
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('target', target);
+    if (options?.mapping && Object.keys(options.mapping).length > 0) {
+      formData.append('mapping', JSON.stringify(options.mapping));
+    }
+    if (options?.defaults && Object.keys(options.defaults).length > 0) {
+      formData.append('defaults', JSON.stringify(options.defaults));
+    }
+    return requestForm<{
+      message: string;
+      target: string;
+      created_count: number;
+      updated_count: number;
+      skipped_count: number;
+    }>('/admin/import/master/commit', formData, token);
+  },
+
+
   exportReport: async (
     token: string,
     payload: {

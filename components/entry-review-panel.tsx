@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -378,13 +378,20 @@ export function EntryReviewPanel() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         entry.warning_status === 'normal'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : entry.warning_status === 'below_minimum'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-rose-100 text-rose-800'
                       }`}>
-                        {entry.warning_status === 'normal' ? 'normal' : entry.warning_status === 'below_minimum' ? 'âš  di bawah min' : 'âš  di atas maks'}
+                        {entry.warning_status === 'normal'
+                          ? '✓ Normal'
+                          : entry.warning_status === 'below_minimum'
+                          ? '⚠ Di Bawah Min'
+                          : '⚠ Di Atas Maks'}
                       </span>
+
 
                       <button
                         id={`btn-edit-entry-${entry.id}`}
