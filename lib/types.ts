@@ -60,5 +60,26 @@ export interface AdminSummary {
   commodities: number;
   total_entries: number;
   warning_entries: number;
+  by_year?: Array<{
+    year: number;
+    total_entries: number;
+    warning_entries: number;
+  }>;
+  by_market?: Array<{
+    market_id: number;
+    market_name: string;
+    district: string;
+    total_entries: number;
+    warning_entries: number;
+  }>;
+  by_collector?: Array<{
+    collector_id: number;
+    collector_name: string;
+    username: string;
+    total_entries: number;
+    warning_entries: number;
+  }>;
+  recent_entries?: DataEntry[];
   message?: string;
 }
+

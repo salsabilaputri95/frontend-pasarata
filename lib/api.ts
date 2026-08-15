@@ -73,8 +73,36 @@ export const api = {
     request<CollectorDashboard>(`/dashboard${year ? `?year=${year}` : ''}`, {}, token),
   entries: async (token: string): Promise<{ data: DataEntry[] }> =>
     request<{ data: DataEntry[] }>('/entries/me', {}, token),
+  priceReference: async (
+    token: string,
+    commodityId: number,
+    marketId?: number,
+    year?: number,
+  ): Promise<{
+    found: boolean;
+    ref_year: number;
+    commodity_id: number;
+    market_id: number;
+    scope?: string;
+    minimum_price?: number;
+    maximum_price?: number;
+    previous_price?: number;
+    sample_count?: number;
+    message?: string;
+  }> => {
+    const params = new URLSearchParams({ commodity_id: String(commodityId) });
+    if (marketId) params.set('market_id', String(marketId));
+    if (year) params.set('year', String(year));
+    // 404 means "not found" — we catch and return found:false gracefully
+    try {
+      return await request(`/price-reference?${params}`, {}, token);
+    } catch {
+      return { found: false, ref_year: (year ?? new Date().getFullYear()) - 1, commodity_id: commodityId, market_id: marketId ?? 0, message: 'tidak ada data referensi' };
+    }
+  },
   markets: async (token: string): Promise<{ data: Array<{ id: number; name: string; province: string; district: string; nks: string }> }> =>
     request<{ data: Array<{ id: number; name: string; province: string; district: string; nks: string }> }>('/markets', {}, token),
+
   collectors: async (token: string): Promise<{ data: Array<{ id: number; username: string; full_name: string; role: string; status: string }> }> =>
     request<{ data: Array<{ id: number; username: string; full_name: string; role: string; status: string }> }>('/admin/collectors', {}, token),
   assignments: async (token: string): Promise<{ data: Array<{ id: number; user_id: number; market_id: number; user?: { full_name?: string; username?: string }; market?: { name?: string; district?: string } }> }> =>
@@ -83,6 +111,47 @@ export const api = {
     request<{ message: string; data: unknown }>('/admin/assignments', { method: 'POST', body: JSON.stringify(payload) }, token),
   adminEntries: async (token: string): Promise<{ data: DataEntry[] }> =>
     request<{ data: DataEntry[] }>('/admin/entries', {}, token),
+  adminEntriesFiltered: async (
+    token: string,
+    filters: {
+      year?: number;
+      market_id?: number;
+      collector_id?: number;
+      warning_status?: 'normal' | 'below_minimum' | 'above_maximum' | '';
+      is_active?: 'true' | 'false' | '';
+    } = {},
+  ): Promise<{ data: DataEntry[] }> => {
+    const params = new URLSearchParams();
+    if (filters.year) params.set('year', String(filters.year));
+    if (filters.market_id) params.set('market_id', String(filters.market_id));
+    if (filters.collector_id) params.set('collector_id', String(filters.collector_id));
+    if (filters.warning_status) params.set('warning_status', filters.warning_status);
+    if (filters.is_active) params.set('is_active', filters.is_active);
+    const qs = params.toString();
+    return request<{ data: DataEntry[] }>(`/admin/entries${qs ? `?${qs}` : ''}`, {}, token);
+  },
+  adminUpdateEntry: async (
+    token: string,
+    entryId: number,
+    payload: {
+      year: number;
+      market_id: number;
+      category_id: number;
+      commodity_id: number;
+      brand_type: string;
+      local_unit_id: number;
+      local_quantity: number;
+      local_weight_kg: number;
+      standard_unit_id: number;
+      market_price: number;
+      minimum_price: number;
+      maximum_price: number;
+      previous_price: number;
+      notes: string;
+    },
+  ) => request<{ message: string; data: DataEntry }>(`/admin/entries/${entryId}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  adminDeleteEntry: async (token: string, entryId: number) =>
+    request<{ message: string }>(`/admin/entries/${entryId}`, { method: 'DELETE' }, token),
   auditLogs: async (token: string): Promise<{ data: Array<{ id: number; entry_id: number; user_id: number; action: string; before?: string; after?: string; created_at?: string; user?: { full_name?: string; username?: string } }> }> =>
     request<{ data: Array<{ id: number; entry_id: number; user_id: number; action: string; before?: string; after?: string; created_at?: string; user?: { full_name?: string; username?: string } }> }>('/admin/audit-logs', {}, token),
   comparison: async (token: string, year?: number): Promise<{ year: number; data: Array<{ market_name: string; commodity_name: string; current_year: number; previous_year: number; current_average: number; previous_average: number; delta: number; delta_percent: number }> }> =>
@@ -143,12 +212,30 @@ export const api = {
     request<{ message: string }>(`/admin/collectors/${collectorId}/reset-password`, { method: 'POST', body: JSON.stringify({ new_password: newPassword }) }, token),
   createMarket: async (token: string, payload: { province: string; district: string; nks: string; name: string }) =>
     request<{ message: string; data: unknown }>('/admin/markets', { method: 'POST', body: JSON.stringify(payload) }, token),
+  updateMarket: async (token: string, id: number, payload: { province: string; district: string; nks: string; name: string }) =>
+    request<{ message: string; data: unknown }>(`/admin/markets/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  setMarketStatus: async (token: string, id: number, active: boolean) =>
+    request<{ message: string; data: unknown }>(`/admin/markets/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   createCategory: async (token: string, payload: { name: string; type: string }) =>
     request<{ message: string; data: unknown }>('/admin/categories', { method: 'POST', body: JSON.stringify(payload) }, token),
+  updateCategory: async (token: string, id: number, payload: { name: string; type: string }) =>
+    request<{ message: string; data: unknown }>(`/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  setCategoryStatus: async (token: string, id: number, active: boolean) =>
+    request<{ message: string; data: unknown }>(`/admin/categories/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   createCommodity: async (token: string, payload: { code: string; name: string; category_id: number; brand_type?: string }) =>
     request<{ message: string; data: unknown }>('/admin/commodities', { method: 'POST', body: JSON.stringify(payload) }, token),
+  updateCommodity: async (token: string, id: number, payload: { code: string; name: string; category_id: number; brand_type?: string }) =>
+    request<{ message: string; data: unknown }>(`/admin/commodities/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  setCommodityStatus: async (token: string, id: number, active: boolean) =>
+    request<{ message: string; data: unknown }>(`/admin/commodities/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   createUnit: async (token: string, payload: { name: string; is_standard?: boolean; conversion_factor?: number }) =>
     request<{ message: string; data: unknown }>('/admin/units', { method: 'POST', body: JSON.stringify(payload) }, token),
+  updateUnit: async (token: string, id: number, payload: { name: string; is_standard?: boolean; conversion_factor?: number }) =>
+    request<{ message: string; data: unknown }>(`/admin/units/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
+  setUnitStatus: async (token: string, id: number, active: boolean) =>
+    request<{ message: string; data: unknown }>(`/admin/units/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
+  deleteAssignment: async (token: string, id: number) =>
+    request<{ message: string }>(`/admin/assignments/${id}`, { method: 'DELETE' }, token),
   previewImportEntries: async (token: string, file: File, collectorIdDefault?: number) => {
     const formData = new FormData();
     formData.append('file', file);
