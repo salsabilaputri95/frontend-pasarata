@@ -23,7 +23,7 @@ type FilterState = {
 };
 
 const DEFAULT_FILTERS: FilterState = {
-  year: String(new Date().getFullYear()),
+  year: '2026',
   market_id: '',
   collector_id: '',
   warning_status: '',
@@ -145,7 +145,7 @@ export function EntryReviewPanel() {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
     try {
-      const year = appliedFilters.year ? Number(appliedFilters.year) : new Date().getFullYear();
+      const year = appliedFilters.year ? Number(appliedFilters.year) : 2026;
       const blob = await api.exportReport(token, {
         scope: 'entries',
         format: 'xlsx',
@@ -161,7 +161,7 @@ export function EntryReviewPanel() {
     }
   };
 
-  // â”€â”€ Edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Edit actions
   const openEdit = (entry: DataEntry) => {
     setEditingEntry(entry);
     setEditForm(entryToForm(entry));
@@ -204,10 +204,6 @@ export function EntryReviewPanel() {
     }
   };
 
-  // â”€â”€ Delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const confirmDelete = (entryId: number) => setDeletingEntryId(entryId);
-  const cancelDelete = () => setDeletingEntryId(null);
-
   const handleDelete = async () => {
     if (!deletingEntryId) return;
     const token = localStorage.getItem('pasarata_token');
@@ -225,21 +221,27 @@ export function EntryReviewPanel() {
     }
   };
 
-  const fieldClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100';
+  const fieldClass =
+    'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div id="section-review" className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
       <div>
-        <h3 className="text-lg font-bold text-slate-900">Review Data Pendataan</h3>
-        <p className="text-sm text-slate-600">Tinjau, edit, dan hapus entri pendataan. Filter dikirim langsung ke server.</p>
+        <h3 className="text-base font-bold text-slate-900">Review Data Pendataan</h3>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Tinjau, edit, dan hapus entri pendataan. Filter dikirim langsung ke server.
+        </p>
       </div>
 
-      {/* â”€â”€ Filter bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-        <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Filter</div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <label className="block">
-            <span className="mb-1 block text-xs text-slate-500">Tahun</span>
+      {/* FILTER BAR */}
+      <div className="mt-5">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
+          FILTER
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Tahun</label>
             <input
               id="filter-year"
               type="number"
@@ -248,10 +250,10 @@ export function EntryReviewPanel() {
               onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))}
               className={fieldClass}
             />
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs text-slate-500">Market ID</span>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Market ID</label>
             <input
               id="filter-market-id"
               type="number"
@@ -261,10 +263,10 @@ export function EntryReviewPanel() {
               className={fieldClass}
               placeholder="opsional"
             />
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs text-slate-500">Collector ID</span>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Collector ID</label>
             <input
               id="filter-collector-id"
               type="number"
@@ -274,44 +276,48 @@ export function EntryReviewPanel() {
               className={fieldClass}
               placeholder="opsional"
             />
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs text-slate-500">Warning</span>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Warning</label>
             <select
               id="filter-warning"
               className={fieldClass}
               value={filters.warning_status}
-              onChange={(e) => setFilters((f) => ({ ...f, warning_status: e.target.value as FilterState['warning_status'] }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, warning_status: e.target.value as FilterState['warning_status'] }))
+              }
             >
               <option value="">Semua</option>
               <option value="normal">Normal</option>
               <option value="below_minimum">Di bawah minimum</option>
               <option value="above_maximum">Di atas maksimum</option>
             </select>
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs text-slate-500">Status aktif</span>
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Status aktif</label>
             <select
               id="filter-is-active"
               className={fieldClass}
               value={filters.is_active}
-              onChange={(e) => setFilters((f) => ({ ...f, is_active: e.target.value as FilterState['is_active'] }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, is_active: e.target.value as FilterState['is_active'] }))
+              }
             >
               <option value="">Semua</option>
               <option value="true">Aktif</option>
               <option value="false">Nonaktif</option>
             </select>
-          </label>
+          </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             id="btn-apply-filter"
             type="button"
             onClick={handleApplyFilter}
-            className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700 transition-colors"
+            className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-600 transition"
           >
             Terapkan Filter
           </button>
@@ -319,7 +325,7 @@ export function EntryReviewPanel() {
             id="btn-reset-filter"
             type="button"
             onClick={handleResetFilter}
-            className="rounded-lg border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
           >
             Reset
           </button>
@@ -327,209 +333,181 @@ export function EntryReviewPanel() {
             id="btn-export-entries"
             type="button"
             onClick={handleExportEntries}
-            className="ml-auto rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+            className="ml-auto rounded-xl bg-[#059669] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
           >
             Export XLSX
           </button>
         </div>
       </div>
 
-      {/* â”€â”€ Status message â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      {message ? (
-        <div className={`rounded-lg border px-3 py-2 text-sm ${isError ? 'border-red-200 bg-red-50 text-red-700' : 'border-sky-200 bg-sky-50 text-sky-700'}`}>
-          {message}
-        </div>
-      ) : null}
+      {/* Alert strip: "x entri ditemukan" */}
+      <div className="mt-4 rounded-xl border border-sky-200 bg-[#EFF6FF] px-4 py-2.5 text-xs font-semibold text-[#0066FF]">
+        {loading ? 'Memuat data...' : `${entries.length} entri ditemukan`}
+      </div>
 
-      {loading ? (
-        <div className="text-sm text-slate-500">Memuat data...</div>
-      ) : (
-        <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-          {/* â”€â”€ Entry list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-          <div className="space-y-3">
-            {entries.length === 0 ? (
-              <div className="rounded-lg border border-slate-200 p-4 text-sm text-slate-500 text-center">
-                Tidak ada entri yang cocok dengan filter ini.
-              </div>
-            ) : (
-              entries.map((entry) => (
+      {/* Two columns content */}
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
+        {/* Left: Entries list / empty state */}
+        <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+          {entries.length === 0 ? (
+            <div className="py-6 text-center text-xs text-slate-400">
+              Tidak ada entri yang cocok dengan filter ini.
+            </div>
+          ) : (
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className={`rounded-xl border p-4 transition-all ${entry.is_active ? 'border-slate-200 bg-white' : 'border-slate-100 bg-slate-50 opacity-70'}`}
+                  className="rounded-xl border border-slate-200/70 bg-white p-3 shadow-2xs hover:border-slate-300 transition"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="font-semibold text-slate-900">
-                        Entry #{entry.id}
-                        {!entry.is_active && (
-                          <span className="ml-2 text-xs font-normal text-slate-400">(nonaktif)</span>
-                        )}
+                      <div className="text-xs font-bold text-slate-900">
+                        #{entry.id} • {entry.commodity?.name ?? `Komoditas #${entry.commodity_id}`}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        Tahun {entry.year} â€¢{' '}
-                        {entry.market?.name ?? `Pasar #${entry.market_id}`} â€¢{' '}
-                        {entry.commodity?.name ?? `Komoditas #${entry.commodity_id}`}
-                        {entry.brand_type ? ` â€” ${entry.brand_type}` : ''}
-                      </div>
-                      <div className="mt-0.5 text-xs text-slate-400">
-                        Collector #{entry.collector_id}
-                        {entry.created_at ? ` â€¢ ${new Date(entry.created_at).toLocaleDateString('id-ID')}` : ''}
+                      <div className="text-[11px] text-slate-500">
+                        {entry.market?.name ?? `Pasar #${entry.market_id}`} • Petugas #{entry.collector_id}
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        entry.warning_status === 'normal'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : entry.warning_status === 'below_minimum'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {entry.warning_status === 'normal'
-                          ? '✓ Normal'
-                          : entry.warning_status === 'below_minimum'
-                          ? '⚠ Di Bawah Min'
-                          : '⚠ Di Atas Maks'}
+                    <div className="text-right">
+                      <div className="text-xs font-bold text-slate-900">
+                        Rp {Number(entry.market_price).toLocaleString('id-ID')}
+                      </div>
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold mt-0.5 ${
+                          entry.warning_status === 'normal'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {entry.warning_status === 'normal' ? 'Normal' : 'Warning'}
                       </span>
-
-
-                      <button
-                        id={`btn-edit-entry-${entry.id}`}
-                        type="button"
-                        onClick={() => openEdit(entry)}
-                        className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        id={`btn-delete-entry-${entry.id}`}
-                        type="button"
-                        onClick={() => confirmDelete(entry.id)}
-                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
-                      >
-                        Hapus
-                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-3 grid gap-1 text-xs text-slate-600 sm:grid-cols-3">
-                    <div>Harga pasar: <span className="font-medium">Rp {Number(entry.market_price).toLocaleString('id-ID')}</span></div>
-                    <div>Min: <span className="font-medium">Rp {Number(entry.minimum_price).toLocaleString('id-ID')}</span></div>
-                    <div>Maks: <span className="font-medium">Rp {Number(entry.maximum_price).toLocaleString('id-ID')}</span></div>
-                    <div>Konversi: <span className="font-medium">Rp {Number(entry.converted_price).toLocaleString('id-ID')}</span></div>
-                    <div>Berat: <span className="font-medium">{entry.local_weight_kg} kg</span></div>
-                    <div>Satuan lokal: <span className="font-medium">{entry.local_unit?.name ?? `#${entry.local_unit_id}`}</span></div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => openEdit(entry)}
+                      className="rounded-lg px-2.5 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeletingEntryId(entry.id)}
+                      className="rounded-lg px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition"
+                    >
+                      Hapus
+                    </button>
                   </div>
-                  {entry.notes ? <div className="mt-2 text-xs text-slate-500">Catatan: {entry.notes}</div> : null}
                 </div>
-              ))
-            )}
-          </div>
-
-          {/* â”€â”€ Audit log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Audit Log (terbaru)</h4>
-            <div className="mt-3 space-y-3">
-              {logs.length === 0 ? (
-                <div className="text-sm text-slate-500">Belum ada log aktivitas.</div>
-              ) : (
-                logs.slice(0, 10).map((log) => (
-                  <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`rounded px-1.5 py-0.5 font-semibold ${
-                        log.action === 'delete' ? 'bg-red-100 text-red-700' :
-                        log.action === 'update' ? 'bg-amber-100 text-amber-700' :
-                        'bg-sky-100 text-sky-700'
-                      }`}>
-                        {log.action}
-                      </span>
-                      <span className="text-slate-400">Entry #{log.entry_id}</span>
-                    </div>
-                    <div className="mt-1 text-slate-500">
-                      {log.user?.full_name ?? 'System'} â€¢{' '}
-                      {log.created_at ? new Date(log.created_at).toLocaleString('id-ID') : '-'}
-                    </div>
-                  </div>
-                ))
-              )}
+              ))}
             </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* â”€â”€ Modal Edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* Right: AUDIT LOG (TERBARU) */}
+        <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
+            AUDIT LOG (TERBARU)
+          </div>
+
+          {logs.length === 0 ? (
+            <div className="py-6 text-center text-xs text-slate-400">
+              Belum ada log aktivitas.
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {logs.slice(0, 10).map((log) => (
+                <div
+                  key={log.id}
+                  className="rounded-lg border border-slate-200/60 bg-white p-2.5 text-xs text-slate-700"
+                >
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-slate-900">{log.action}</span>
+                    <span className="text-slate-400">#{log.entry_id}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    Oleh: {log.user?.full_name ?? 'Sistem'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Edit Modal */}
       {editingEntry && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h4 className="text-base font-bold text-slate-900">Edit Entry #{editingEntry.id}</h4>
-              <button
-                id="btn-close-edit-modal"
-                type="button"
-                onClick={closeEdit}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                âœ•
-              </button>
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="text-sm font-bold text-slate-900">Edit Entri #{editingEntry.id}</h4>
+              <button onClick={closeEdit} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ['year', 'Tahun', 'number'],
-                  ['market_id', 'Market ID', 'number'],
-                  ['category_id', 'Kategori ID', 'number'],
-                  ['commodity_id', 'Komoditas ID', 'number'],
-                  ['brand_type', 'Jenis/Merek', 'text'],
-                  ['local_unit_id', 'Satuan Lokal ID', 'number'],
-                  ['local_quantity', 'Kuantitas Lokal', 'number'],
-                  ['local_weight_kg', 'Berat (kg)', 'number'],
-                  ['standard_unit_id', 'Satuan Standar ID', 'number'],
-                  ['market_price', 'Harga Pasar', 'number'],
-                  ['minimum_price', 'Harga Minimum', 'number'],
-                  ['maximum_price', 'Harga Maksimum', 'number'],
-                  ['previous_price', 'Harga Sebelumnya', 'number'],
-                ] as [keyof EditForm, string, string][]
-              ).map(([key, label, type]) => (
-                <label key={key} className="block">
-                  <span className="mb-1 block text-xs text-slate-500">{label}</span>
+            <div className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs text-slate-500">Harga Pasar (Rp)</span>
                   <input
-                    id={`edit-${key}`}
-                    type={type}
-                    value={editForm[key]}
-                    onChange={(e) => setEditForm((f) => f ? { ...f, [key]: e.target.value } : f)}
+                    type="number"
+                    value={editForm.market_price}
+                    onChange={(e) => setEditForm({ ...editForm, market_price: e.target.value })}
                     className={fieldClass}
                   />
                 </label>
-              ))}
+                <label className="block">
+                  <span className="text-xs text-slate-500">Berat Bersih (kg)</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editForm.local_weight_kg}
+                    onChange={(e) => setEditForm({ ...editForm, local_weight_kg: e.target.value })}
+                    className={fieldClass}
+                  />
+                </label>
+              </div>
 
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-xs text-slate-500">Catatan</span>
-                <textarea
-                  id="edit-notes"
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs text-slate-500">Harga Min (Rp)</span>
+                  <input
+                    type="number"
+                    value={editForm.minimum_price}
+                    onChange={(e) => setEditForm({ ...editForm, minimum_price: e.target.value })}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-slate-500">Harga Maks (Rp)</span>
+                  <input
+                    type="number"
+                    value={editForm.maximum_price}
+                    onChange={(e) => setEditForm({ ...editForm, maximum_price: e.target.value })}
+                    className={fieldClass}
+                  />
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="text-xs text-slate-500">Catatan</span>
+                <input
+                  type="text"
                   value={editForm.notes}
-                  onChange={(e) => setEditForm((f) => f ? { ...f, notes: e.target.value } : f)}
-                  rows={3}
-                  className={`${fieldClass} resize-none`}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  className={fieldClass}
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex gap-3 justify-end">
-              <button
-                id="btn-cancel-edit"
-                type="button"
-                onClick={closeEdit}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
-              >
+            <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-3">
+              <button onClick={closeEdit} className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
                 Batal
               </button>
               <button
-                id="btn-save-edit"
-                type="button"
                 onClick={handleEditSave}
                 disabled={editLoading}
-                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                className="rounded-xl bg-[#0066FF] px-4 py-1.5 text-xs font-bold text-white hover:bg-blue-600 transition"
               >
                 {editLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
@@ -538,31 +516,29 @@ export function EntryReviewPanel() {
         </div>
       )}
 
-      {/* â”€â”€ Konfirmasi Hapus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Delete Confirmation Modal */}
       {deletingEntryId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <h4 className="text-base font-bold text-slate-900">Hapus Entri #{deletingEntryId}?</h4>
-            <p className="mt-2 text-sm text-slate-600">
-              Tindakan ini <strong>tidak dapat dibatalkan</strong>. Data akan dihapus permanen dari sistem.
+            <h4 className="text-sm font-bold text-slate-900">Konfirmasi Hapus Entri</h4>
+            <p className="mt-2 text-xs text-slate-600">
+              Apakah Anda yakin ingin menghapus entri #{deletingEntryId}?
             </p>
-            <div className="mt-5 flex gap-3 justify-end">
+            <div className="mt-5 flex justify-end gap-2">
               <button
-                id="btn-cancel-delete"
                 type="button"
-                onClick={cancelDelete}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                onClick={() => setDeletingEntryId(null)}
+                className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Batal
               </button>
               <button
-                id="btn-confirm-delete"
                 type="button"
-                onClick={handleDelete}
                 disabled={deleteLoading}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                onClick={handleDelete}
+                className="rounded-xl bg-red-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-red-700"
               >
-                {deleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
+                {deleteLoading ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>

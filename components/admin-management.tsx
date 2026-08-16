@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -45,7 +45,6 @@ type UnitRecord = {
   active?: boolean;
 };
 
-// â”€â”€ Generic inline-edit modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type ModalField = { key: string; label: string; type?: string; options?: string[] };
 
 function EditModal({
@@ -70,7 +69,7 @@ function EditModal({
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h4 className="text-base font-bold text-slate-900">{title}</h4>
-          <button id="btn-close-edit-modal" type="button" onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100">âœ•</button>
+          <button id="btn-close-edit-modal" type="button" onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100">✕</button>
         </div>
         <div className="space-y-3">
           {fields.map((field) =>
@@ -79,7 +78,7 @@ function EditModal({
                 <span className="mb-1 block text-xs text-slate-500">{field.label}</span>
                 <select
                   id={`edit-field-${field.key}`}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
                   value={String(form[field.key] ?? '')}
                   onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
                 >
@@ -87,7 +86,7 @@ function EditModal({
                 </select>
               </label>
             ) : field.type === 'checkbox' ? (
-              <label key={field.key} className="flex items-center gap-2 text-sm text-slate-700">
+              <label key={field.key} className="flex items-center gap-2 text-xs text-slate-700">
                 <input
                   id={`edit-field-${field.key}`}
                   type="checkbox"
@@ -102,7 +101,7 @@ function EditModal({
                 <input
                   id={`edit-field-${field.key}`}
                   type={field.type ?? 'text'}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:border-sky-400 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
                   value={String(form[field.key] ?? '')}
                   onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
                 />
@@ -110,9 +109,11 @@ function EditModal({
             )
           )}
         </div>
-        <div className="mt-5 flex justify-end gap-3">
-          <button id="btn-cancel-edit" type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
-          <button id="btn-save-edit" type="button" onClick={() => onSave(form)} disabled={saving} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60">
+        <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-3">
+          <button id="btn-cancel-edit" type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-1.5 text-xs text-slate-600 hover:bg-slate-50">
+            Batal
+          </button>
+          <button id="btn-save-edit" type="button" onClick={() => onSave(form)} disabled={saving} className="rounded-xl bg-[#0066FF] px-4 py-1.5 text-xs font-bold text-white hover:bg-blue-600 disabled:opacity-60">
             {saving ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -121,24 +122,27 @@ function EditModal({
   );
 }
 
-export function AdminManagementPanel() {
+export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' | 'account' | 'all' }) {
   const [collectors, setCollectors] = useState<CollectorRecord[]>([]);
   const [markets, setMarkets] = useState<MarketRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
   const [commodities, setCommodities] = useState<CommodityRecord[]>([]);
   const [units, setUnits] = useState<UnitRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
-  // Create forms
+  // Active sub-tab for Tambah Data & Daftar Data
+  const [activeAddTab, setActiveAddTab] = useState<'collector' | 'market' | 'category' | 'commodity' | 'unit'>('collector');
+  const [activeListTab, setActiveListTab] = useState<'commodity' | 'market' | 'category' | 'unit' | 'collector'>('commodity');
+
+  // Forms
   const [collectorForm, setCollectorForm] = useState({ username: '', password: '', full_name: '' });
   const [marketForm, setMarketForm] = useState({ province: '', district: '', nks: '', name: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'Makanan' });
   const [commodityForm, setCommodityForm] = useState({ code: '', name: '', category_id: '', brand_type: '' });
   const [unitForm, setUnitForm] = useState({ name: '', is_standard: false, conversion_factor: '1' });
 
-  // Edit modal state
+  // Edit modal
   const [editModal, setEditModal] = useState<{
     type: 'market' | 'category' | 'commodity' | 'unit';
     id: number;
@@ -167,14 +171,11 @@ export function AdminManagementPanel() {
       setUnits(unitData.data ?? []);
     } catch (error) {
       showMsg(error instanceof Error ? error.message : 'Gagal memuat data master', true);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => { loadData(); }, []);
 
-  // â”€â”€ Create handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const submitCollector = async () => {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
@@ -190,7 +191,12 @@ export function AdminManagementPanel() {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
     try {
-      await api.createMarket(token, marketForm);
+      await api.createMarket(token, {
+        province: marketForm.province,
+        district: marketForm.district,
+        nks: marketForm.nks,
+        name: marketForm.name,
+      });
       setMarketForm({ province: '', district: '', nks: '', name: '' });
       showMsg('Pasar berhasil dibuat');
       await loadData();
@@ -239,334 +245,445 @@ export function AdminManagementPanel() {
     } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal membuat satuan', true); }
   };
 
-  // â”€â”€ Collector actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const toggleCollectorStatus = async (collector: CollectorRecord) => {
+  const toggleCollector = async (id: number, currentStatus: string) => {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
-    const next = collector.status === 'active' ? 'inactive' : 'active';
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
-      await api.setCollectorStatus(token, collector.id, next);
-      showMsg(`Status ${collector.full_name} diubah ke ${next}`);
+      await api.setCollectorStatus(token, id, nextStatus);
+      showMsg(`Status pendata #${id} diubah menjadi ${nextStatus}`);
       await loadData();
-    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal mengubah status', true); }
+    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal ubah status pendata', true); }
   };
 
-  const resetCollectorPassword = async (collector: CollectorRecord) => {
+  const toggleMasterStatus = async (type: 'market' | 'category' | 'commodity' | 'unit', id: number, currentActive: boolean, name: string) => {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
-    const newPassword = window.prompt(`Password baru untuk ${collector.full_name} (min 6 karakter):`);
-    if (!newPassword) return;
+    const nextActive = !currentActive;
     try {
-      await api.resetCollectorPassword(token, collector.id, newPassword);
-      showMsg(`Password ${collector.full_name} berhasil di-reset`);
-    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal reset password', true); }
-  };
-
-  const editCollector = async (collector: CollectorRecord) => {
-    const token = localStorage.getItem('pasarata_token');
-    if (!token) return;
-    const fullName = window.prompt('Nama lengkap baru:', collector.full_name);
-    const username = window.prompt('Username baru:', collector.username);
-    if (!fullName || !username) return;
-    try {
-      await api.updateCollector(token, collector.id, { full_name: fullName, username });
-      showMsg(`Data ${collector.full_name} berhasil diperbarui`);
+      if (type === 'market') await api.setMarketStatus(token, id, nextActive);
+      else if (type === 'category') await api.setCategoryStatus(token, id, nextActive);
+      else if (type === 'commodity') await api.setCommodityStatus(token, id, nextActive);
+      else if (type === 'unit') await api.setUnitStatus(token, id, nextActive);
+      showMsg(`Status ${name} berhasil diubah`);
       await loadData();
-    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal update pendata', true); }
+    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal ubah status', true); }
   };
 
-  // â”€â”€ Master status toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const toggleMasterStatus = async (
-    type: 'market' | 'category' | 'commodity' | 'unit',
-    id: number,
-    currentActive: boolean,
-    name: string,
-  ) => {
-    const token = localStorage.getItem('pasarata_token');
-    if (!token) return;
-    const next = !currentActive;
-    try {
-      if (type === 'market') await api.setMarketStatus(token, id, next);
-      else if (type === 'category') await api.setCategoryStatus(token, id, next);
-      else if (type === 'commodity') await api.setCommodityStatus(token, id, next);
-      else await api.setUnitStatus(token, id, next);
-      showMsg(`${name} berhasil ${next ? 'diaktifkan' : 'dinonaktifkan'}`);
-      await loadData();
-    } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal mengubah status', true); }
-  };
-
-  // â”€â”€ Edit modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const openEditMarket = (m: MarketRecord) =>
+  const openEditMarket = (m: MarketRecord) => {
     setEditModal({
-      type: 'market', id: m.id,
+      type: 'market',
+      id: m.id,
       fields: [
-        { key: 'province', label: 'Provinsi' },
-        { key: 'district', label: 'Kabupaten/Kota' },
-        { key: 'nks', label: 'NKS' },
         { key: 'name', label: 'Nama Pasar' },
+        { key: 'nks', label: 'Kode NKS' },
+        { key: 'district', label: 'Kecamatan / Kabupaten' },
+        { key: 'province', label: 'Provinsi' },
       ],
-      values: { province: m.province ?? '', district: m.district ?? '', nks: m.nks ?? '', name: m.name },
+      values: { name: m.name, nks: m.nks ?? '', district: m.district ?? '', province: m.province ?? '' },
     });
+  };
 
-  const openEditCategory = (c: CategoryRecord) =>
+  const openEditCategory = (c: CategoryRecord) => {
     setEditModal({
-      type: 'category', id: c.id,
+      type: 'category',
+      id: c.id,
       fields: [
         { key: 'name', label: 'Nama Kategori' },
         { key: 'type', label: 'Tipe', options: ['Makanan', 'Non Makanan'] },
       ],
       values: { name: c.name, type: c.type },
     });
+  };
 
-  const openEditCommodity = (c: CommodityRecord) =>
+  const openEditCommodity = (cm: CommodityRecord) => {
     setEditModal({
-      type: 'commodity', id: c.id,
+      type: 'commodity',
+      id: cm.id,
       fields: [
-        { key: 'code', label: 'Kode' },
         { key: 'name', label: 'Nama Komoditas' },
-        { key: 'category_id', label: 'Kategori ID', type: 'number' },
-        { key: 'brand_type', label: 'Jenis/Merek (opsional)' },
+        { key: 'code', label: 'Kode' },
+        { key: 'brand_type', label: 'Merek / Jenis' },
       ],
-      values: { code: c.code, name: c.name, category_id: String(c.category_id), brand_type: c.brand_type ?? '' },
+      values: { name: cm.name, code: cm.code, brand_type: cm.brand_type ?? '' },
     });
+  };
 
-  const openEditUnit = (u: UnitRecord) =>
+  const openEditUnit = (u: UnitRecord) => {
     setEditModal({
-      type: 'unit', id: u.id,
+      type: 'unit',
+      id: u.id,
       fields: [
         { key: 'name', label: 'Nama Satuan' },
-        { key: 'is_standard', label: 'Gunakan sebagai satuan standar', type: 'checkbox' },
-        { key: 'conversion_factor', label: 'Faktor konversi', type: 'number' },
+        { key: 'conversion_factor', label: 'Faktor Konversi (kg)', type: 'number' },
+        { key: 'is_standard', label: 'Satuan Standar', type: 'checkbox' },
       ],
-      values: { name: u.name, is_standard: u.is_standard, conversion_factor: String(u.conversion_factor) },
+      values: { name: u.name, conversion_factor: String(u.conversion_factor), is_standard: u.is_standard },
     });
+  };
 
   const handleEditSave = async (vals: Record<string, string | boolean>) => {
+    if (!editModal) return;
     const token = localStorage.getItem('pasarata_token');
-    if (!token || !editModal) return;
+    if (!token) return;
     setEditSaving(true);
     try {
       if (editModal.type === 'market') {
         await api.updateMarket(token, editModal.id, {
-          province: String(vals.province), district: String(vals.district),
-          nks: String(vals.nks), name: String(vals.name),
+          name: String(vals.name),
+          nks: String(vals.nks),
+          district: String(vals.district),
+          province: String(vals.province),
         });
       } else if (editModal.type === 'category') {
-        await api.updateCategory(token, editModal.id, { name: String(vals.name), type: String(vals.type) });
+        await api.updateCategory(token, editModal.id, {
+          name: String(vals.name),
+          type: String(vals.type),
+        });
       } else if (editModal.type === 'commodity') {
         await api.updateCommodity(token, editModal.id, {
-          code: String(vals.code), name: String(vals.name),
-          category_id: Number(vals.category_id), brand_type: String(vals.brand_type),
+          name: String(vals.name),
+          code: String(vals.code),
+          brand_type: String(vals.brand_type),
+          category_id: 1,
         });
       } else if (editModal.type === 'unit') {
         await api.updateUnit(token, editModal.id, {
-          name: String(vals.name), is_standard: Boolean(vals.is_standard),
+          name: String(vals.name),
           conversion_factor: Number(vals.conversion_factor),
+          is_standard: Boolean(vals.is_standard),
         });
       }
-      showMsg('Data master berhasil diperbarui');
+      showMsg('Data berhasil diperbarui');
       setEditModal(null);
       await loadData();
     } catch (error) {
-      showMsg(error instanceof Error ? error.message : 'Gagal memperbarui data master', true);
+      showMsg(error instanceof Error ? error.message : 'Gagal memperbarui', true);
     } finally {
       setEditSaving(false);
     }
   };
 
-  const fc = 'input';
+  const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none";
 
   return (
-    <div className="space-y-8">
-      {message ? (
-        <div className={`rounded-xl border px-4 py-3 text-sm ${isError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+    <div className="space-y-6">
+      {message && (
+        <div className={`rounded-xl border px-4 py-2.5 text-xs font-semibold ${
+          isError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        }`}>
           {message}
         </div>
-      ) : null}
+      )}
 
-      {/* â”€â”€ Create forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Tambah Pendata">
-          <div className="space-y-3">
-            <input className={fc} value={collectorForm.full_name} onChange={(e) => setCollectorForm({ ...collectorForm, full_name: e.target.value })} placeholder="Nama lengkap" />
-            <input className={fc} value={collectorForm.username} onChange={(e) => setCollectorForm({ ...collectorForm, username: e.target.value })} placeholder="Username" />
-            <input type="password" className={fc} value={collectorForm.password} onChange={(e) => setCollectorForm({ ...collectorForm, password: e.target.value })} placeholder="Password" />
-            <button id="btn-create-collector" onClick={submitCollector} className="btn-primary">Simpan pendata</button>
-          </div>
-        </Panel>
+      {/* ── 1. TAMBAH DATA MASTER ─────────────────────────────────── */}
+      {(mode === 'add' || mode === 'all') && (
+        <div id="section-master-add" className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Tambah Data Master</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Form pembuatan entitas baru sistem Pasara&apos;ta&apos;.</p>
+            </div>
 
-        <Panel title="Tambah Pasar">
-          <div className="space-y-3">
-            <input className={fc} value={marketForm.province} onChange={(e) => setMarketForm({ ...marketForm, province: e.target.value })} placeholder="Provinsi" />
-            <input className={fc} value={marketForm.district} onChange={(e) => setMarketForm({ ...marketForm, district: e.target.value })} placeholder="Kabupaten/Kota" />
-            <input className={fc} value={marketForm.nks} onChange={(e) => setMarketForm({ ...marketForm, nks: e.target.value })} placeholder="NKS" />
-            <input className={fc} value={marketForm.name} onChange={(e) => setMarketForm({ ...marketForm, name: e.target.value })} placeholder="Nama pasar" />
-            <button id="btn-create-market" onClick={submitMarket} className="btn-primary">Simpan pasar</button>
-          </div>
-        </Panel>
-
-        <Panel title="Tambah Kategori">
-          <div className="space-y-3">
-            <input className={fc} value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="Nama kategori" />
-            <select className={fc} value={categoryForm.type} onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}>
-              <option>Makanan</option>
-              <option>Non Makanan</option>
-            </select>
-            <button id="btn-create-category" onClick={submitCategory} className="btn-primary">Simpan kategori</button>
-          </div>
-        </Panel>
-
-        <Panel title="Tambah Komoditas">
-          <div className="space-y-3">
-            <input className={fc} value={commodityForm.code} onChange={(e) => setCommodityForm({ ...commodityForm, code: e.target.value })} placeholder="Kode komoditas" />
-            <input className={fc} value={commodityForm.name} onChange={(e) => setCommodityForm({ ...commodityForm, name: e.target.value })} placeholder="Nama komoditas" />
-            <select className={fc} value={commodityForm.category_id} onChange={(e) => setCommodityForm({ ...commodityForm, category_id: e.target.value })}>
-              <option value="">Pilih kategori</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
+            <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+              {[
+                { key: 'collector', label: 'Pendata' },
+                { key: 'market', label: 'Pasar' },
+                { key: 'category', label: 'Kategori' },
+                { key: 'commodity', label: 'Komoditas' },
+                { key: 'unit', label: 'Satuan' },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveAddTab(t.key as typeof activeAddTab)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    activeAddTab === t.key ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t.label}
+                </button>
               ))}
-            </select>
-            <input className={fc} value={commodityForm.brand_type} onChange={(e) => setCommodityForm({ ...commodityForm, brand_type: e.target.value })} placeholder="Jenis / merek (opsional)" />
-            <button id="btn-create-commodity" onClick={submitCommodity} className="btn-primary">Simpan komoditas</button>
+            </div>
           </div>
-        </Panel>
 
-        <Panel title="Tambah Satuan">
-          <div className="space-y-3">
-            <input className={fc} value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} placeholder="Nama satuan" />
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="checkbox" checked={unitForm.is_standard} onChange={(e) => setUnitForm({ ...unitForm, is_standard: e.target.checked })} />
-              Gunakan sebagai satuan standar
-            </label>
-            <input type="number" step="0.01" className={fc} value={unitForm.conversion_factor} onChange={(e) => setUnitForm({ ...unitForm, conversion_factor: e.target.value })} placeholder="Faktor konversi" />
-            <button id="btn-create-unit" onClick={submitUnit} className="btn-primary">Simpan satuan</button>
-          </div>
-        </Panel>
-      </div>
-
-      {/* â”€â”€ Lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Daftar Pendata">
-          {loading ? <p className="text-slate-500">Memuat...</p> : (
-            <ul className="space-y-2 text-sm text-slate-700">
-              {collectors.length === 0 ? <li>Belum ada data.</li> : collectors.map((collector) => (
-                <li key={collector.id} className="rounded-lg border border-slate-200 px-3 py-2">
-                  <div className="font-semibold">{collector.full_name}</div>
-                  <div>@{collector.username} â€¢{' '}
-                    <span className={collector.status === 'active' ? 'text-emerald-600' : 'text-slate-400'}>{collector.status}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button id={`btn-edit-collector-${collector.id}`} type="button" onClick={() => editCollector(collector)} className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Edit</button>
-                    <button id={`btn-toggle-collector-${collector.id}`} type="button" onClick={() => toggleCollectorStatus(collector)} className="rounded border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50">{collector.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}</button>
-                    <button id={`btn-reset-pw-${collector.id}`} type="button" onClick={() => resetCollectorPassword(collector)} className="rounded border border-rose-300 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50">Reset Password</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title="Daftar Pasar">
-          {loading ? <p className="text-slate-500">Memuat...</p> : (
-            <ul className="space-y-2 text-sm text-slate-700">
-              {markets.length === 0 ? <li>Belum ada data.</li> : markets.map((market) => (
-                <li key={market.id} className={`rounded-lg border px-3 py-2 ${market.active === false ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-slate-200'}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="font-semibold">{market.name}{market.active === false && <span className="ml-2 text-xs text-slate-400">(nonaktif)</span>}</div>
-                      <div className="text-xs text-slate-500">{market.district} â€¢ {market.nks}</div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button id={`btn-edit-market-${market.id}`} type="button" onClick={() => openEditMarket(market)} className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700 hover:bg-sky-100">Edit</button>
-                      <button id={`btn-toggle-market-${market.id}`} type="button" onClick={() => toggleMasterStatus('market', market.id, market.active !== false, market.name)} className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700 hover:bg-amber-100">
-                        {market.active === false ? 'Aktifkan' : 'Nonaktifkan'}
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Daftar Kategori">
-          {categories.length === 0 ? <p className="text-slate-500">Belum ada data.</p> : (
-            <ul className="space-y-2 text-sm text-slate-700">
-              {categories.map((category) => (
-                <li key={category.id} className={`rounded-lg border px-3 py-2 ${category.active === false ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-slate-200'}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      {category.name}{category.active === false && <span className="ml-2 text-xs text-slate-400">(nonaktif)</span>}
-                      <span className="ml-1 text-slate-500">({category.type})</span>
-                    </div>
-                    <div className="flex gap-1">
-                      <button id={`btn-edit-category-${category.id}`} type="button" onClick={() => openEditCategory(category)} className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700 hover:bg-sky-100">Edit</button>
-                      <button id={`btn-toggle-category-${category.id}`} type="button" onClick={() => toggleMasterStatus('category', category.id, category.active !== false, category.name)} className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700 hover:bg-amber-100">
-                        {category.active === false ? 'Aktifkan' : 'Nonaktifkan'}
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title="Daftar Satuan">
-          {units.length === 0 ? <p className="text-slate-500">Belum ada data.</p> : (
-            <ul className="space-y-2 text-sm text-slate-700">
-              {units.map((unit) => (
-                <li key={unit.id} className={`rounded-lg border px-3 py-2 ${unit.active === false ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-slate-200'}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      {unit.name} {unit.is_standard ? <span className="rounded bg-sky-100 px-1 text-xs text-sky-700">Standar</span> : ''}
-                      {unit.active === false && <span className="ml-2 text-xs text-slate-400">(nonaktif)</span>}
-                      <div className="text-xs text-slate-400">Faktor: {unit.conversion_factor}</div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button id={`btn-edit-unit-${unit.id}`} type="button" onClick={() => openEditUnit(unit)} className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-700 hover:bg-sky-100">Edit</button>
-                      <button id={`btn-toggle-unit-${unit.id}`} type="button" onClick={() => toggleMasterStatus('unit', unit.id, unit.active !== false, unit.name)} className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700 hover:bg-amber-100">
-                        {unit.active === false ? 'Aktifkan' : 'Nonaktifkan'}
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-
-      {/* Komoditas full-width karena lebih banyak field */}
-      <Panel title="Daftar Komoditas">
-        {commodities.length === 0 ? <p className="text-slate-500">Belum ada data.</p> : (
-          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 text-sm text-slate-700">
-            {commodities.map((commodity) => (
-              <li key={commodity.id} className={`rounded-lg border px-3 py-2 ${commodity.active === false ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-slate-200'}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold">{commodity.name}{commodity.active === false && <span className="ml-1 text-xs text-slate-400">(nonaktif)</span>}</div>
-                    <div className="text-xs text-slate-500">{commodity.code} â€¢ {commodity.category?.name ?? `Kat #${commodity.category_id}`}</div>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-1">
-                    <button id={`btn-edit-commodity-${commodity.id}`} type="button" onClick={() => openEditCommodity(commodity)} className="rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-700 hover:bg-sky-100">Edit</button>
-                    <button id={`btn-toggle-commodity-${commodity.id}`} type="button" onClick={() => toggleMasterStatus('commodity', commodity.id, commodity.active !== false, commodity.name)} className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-100">
-                      {commodity.active === false ? 'Aktifkan' : 'Nonaktif'}
-                    </button>
-                  </div>
+          <div className="mt-4">
+            {activeAddTab === 'collector' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input placeholder="Username" className={inputClass} value={collectorForm.username} onChange={(e) => setCollectorForm({ ...collectorForm, username: e.target.value })} />
+                <input placeholder="Password" type="password" className={inputClass} value={collectorForm.password} onChange={(e) => setCollectorForm({ ...collectorForm, password: e.target.value })} />
+                <input placeholder="Nama Lengkap" className={inputClass} value={collectorForm.full_name} onChange={(e) => setCollectorForm({ ...collectorForm, full_name: e.target.value })} />
+                <div className="sm:col-span-3 flex justify-end">
+                  <button onClick={submitCollector} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+                    Simpan Pendata
+                  </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+              </div>
+            )}
 
-      {/* â”€â”€ Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {activeAddTab === 'market' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <input placeholder="Nama Pasar" className={inputClass} value={marketForm.name} onChange={(e) => setMarketForm({ ...marketForm, name: e.target.value })} />
+                <input placeholder="Kode NKS" className={inputClass} value={marketForm.nks} onChange={(e) => setMarketForm({ ...marketForm, nks: e.target.value })} />
+                <input placeholder="Kecamatan" className={inputClass} value={marketForm.district} onChange={(e) => setMarketForm({ ...marketForm, district: e.target.value })} />
+                <input placeholder="Provinsi" className={inputClass} value={marketForm.province} onChange={(e) => setMarketForm({ ...marketForm, province: e.target.value })} />
+                <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+                  <button onClick={submitMarket} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+                    Simpan Pasar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeAddTab === 'category' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input placeholder="Nama Kategori" className={inputClass} value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} />
+                <select className={inputClass} value={categoryForm.type} onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value })}>
+                  <option value="Makanan">Makanan</option>
+                  <option value="Non Makanan">Non Makanan</option>
+                </select>
+                <div className="sm:col-span-2 flex justify-end">
+                  <button onClick={submitCategory} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+                    Simpan Kategori
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeAddTab === 'commodity' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <input placeholder="Kode (mis. BERAS-01)" className={inputClass} value={commodityForm.code} onChange={(e) => setCommodityForm({ ...commodityForm, code: e.target.value })} />
+                <input placeholder="Nama Komoditas" className={inputClass} value={commodityForm.name} onChange={(e) => setCommodityForm({ ...commodityForm, name: e.target.value })} />
+                <select className={inputClass} value={commodityForm.category_id} onChange={(e) => setCommodityForm({ ...commodityForm, category_id: e.target.value })}>
+                  <option value="">Pilih Kategori</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <input placeholder="Merek / Jenis (Opsional)" className={inputClass} value={commodityForm.brand_type} onChange={(e) => setCommodityForm({ ...commodityForm, brand_type: e.target.value })} />
+                <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+                  <button onClick={submitCommodity} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+                    Simpan Komoditas
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeAddTab === 'unit' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input placeholder="Nama Satuan (mis. Liter / Ikat)" className={inputClass} value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} />
+                <input placeholder="Faktor Konversi (kg)" type="number" step="0.01" className={inputClass} value={unitForm.conversion_factor} onChange={(e) => setUnitForm({ ...unitForm, conversion_factor: e.target.value })} />
+                <label className="flex items-center gap-2 text-xs text-slate-700 px-1">
+                  <input type="checkbox" checked={unitForm.is_standard} onChange={(e) => setUnitForm({ ...unitForm, is_standard: e.target.checked })} />
+                  Satuan Standar Universal
+                </label>
+                <div className="sm:col-span-3 flex justify-end">
+                  <button onClick={submitUnit} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+                    Simpan Satuan
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. DAFTAR DATA MASTER ─────────────────────────────────── */}
+      {(mode === 'list' || mode === 'all') && (
+        <div id="section-master-list" className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Daftar Data Master</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Tinjau, aktifkan, atau edit entitas master sistem.</p>
+            </div>
+
+            <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+              {[
+                { key: 'commodity', label: `Komoditas (${commodities.length})` },
+                { key: 'market', label: `Pasar (${markets.length})` },
+                { key: 'category', label: `Kategori (${categories.length})` },
+                { key: 'unit', label: `Satuan (${units.length})` },
+                { key: 'collector', label: `Pendata (${collectors.length})` },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveListTab(t.key as typeof activeListTab)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    activeListTab === t.key ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            {activeListTab === 'commodity' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {commodities.map((c) => (
+                  <div key={c.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{c.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{c.code} • {c.category?.name ?? 'Umum'}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => openEditCommodity(c)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
+                      <button onClick={() => toggleMasterStatus('commodity', c.id, c.active !== false, c.name)} className="text-[11px] font-semibold text-slate-500 hover:bg-slate-100 px-2 py-1 rounded">
+                        {c.active !== false ? 'Aktif' : 'Nonaktif'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeListTab === 'market' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {markets.map((m) => (
+                  <div key={m.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{m.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{m.district ?? '-'} (NKS: {m.nks ?? '-'})</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => openEditMarket(m)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
+                      <button onClick={() => toggleMasterStatus('market', m.id, m.active !== false, m.name)} className="text-[11px] font-semibold text-slate-500 hover:bg-slate-100 px-2 py-1 rounded">
+                        {m.active !== false ? 'Aktif' : 'Nonaktif'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeListTab === 'category' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {categories.map((c) => (
+                  <div key={c.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{c.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{c.type}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => openEditCategory(c)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeListTab === 'unit' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {units.map((u) => (
+                  <div key={u.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{u.name} {u.is_standard && <span className="text-[10px] text-blue-600">(Standar)</span>}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Konversi: {u.conversion_factor} kg</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => openEditUnit(u)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeListTab === 'collector' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {collectors.map((c) => (
+                  <div key={c.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{c.full_name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">@{c.username} • {c.role}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => toggleCollector(c.id, c.status)} className="text-[11px] font-semibold text-slate-600 hover:bg-slate-100 px-2 py-1 rounded">
+                        {c.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. INFORMASI AKUN ─────────────────────────────────────── */}
+      {(mode === 'account' || mode === 'all') && (
+        <div id="section-account" className="w-full space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Informasi Akun Administrator</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Rincian profil, hak akses sistem, dan parameter sesi aktif.</p>
+            </div>
+            <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
+              ● Sesi Aktif
+            </span>
+          </div>
+
+          {/* Profile Banner */}
+          <div className="rounded-xl border border-blue-100 bg-[#EFF6FF] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-xs">
+                A
+              </div>
+              <div>
+                <div className="text-base font-bold text-slate-900">Administrator Pasara&apos;ta&apos;</div>
+                <div className="text-xs text-slate-600 mt-0.5">admin@example.com • Badan Pusat Statistik Kabupaten Jeneponto</div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                    Super Admin
+                  </span>
+                  <span className="rounded-md bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-semibold">
+                    Hak Akses Penuh
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase">Username Akun</div>
+              <div className="mt-1 text-sm font-bold text-slate-900">@admin</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">ID Pengguna: #1</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase">Peran (Role)</div>
+              <div className="mt-1 text-sm font-bold text-slate-900">Administrator</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">Akses seluruh modul & data</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase">Wilayah Pantauan</div>
+              <div className="mt-1 text-sm font-bold text-slate-900">Kabupaten Jeneponto</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">Seluruh Pasar Binaan</div>
+            </div>
+
+            <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase">Versi Platform</div>
+              <div className="mt-1 text-sm font-bold text-slate-900">Pasara&apos;ta&apos; v2.0</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">BPS Standard Compliant</div>
+            </div>
+          </div>
+
+          {/* System Security & Logs Note */}
+          <div className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="font-bold text-slate-800">Keamanan Sesi:</span> Otentikasi berbasis JWT Token tersinkronisasi langsung dengan server backend.
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Waktu Server: 2026 • Status Normal
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
       {editModal && (
         <EditModal
-          title={`Edit ${editModal.type === 'market' ? 'Pasar' : editModal.type === 'category' ? 'Kategori' : editModal.type === 'commodity' ? 'Komoditas' : 'Satuan'} #${editModal.id}`}
+          title={`Edit Data #${editModal.id}`}
           fields={editModal.fields}
           values={editModal.values}
           onClose={() => setEditModal(null)}
@@ -577,13 +694,3 @@ export function AdminManagementPanel() {
     </div>
   );
 }
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-4 text-lg font-bold text-slate-900">{title}</h3>
-      {children}
-    </div>
-  );
-}
-
