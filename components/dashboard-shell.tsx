@@ -27,11 +27,15 @@ export function DashboardShell({ title, children }: { title: string; children: R
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
       <header className="border-b border-slate-200 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">Pasara'ta</p>
-            <h1 className="text-xl font-bold text-slate-900">{title}</h1>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <img src="/logo-pasarata.png" alt="Logo Pasara'ta" className="h-9 w-auto object-contain" />
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">Pasara&apos;ta&apos; BPS Jeneponto</p>
+              <h1 className="text-lg font-extrabold text-slate-900">{title}</h1>
+            </div>
           </div>
+
 
           <div className="flex items-center gap-4">
             <div className="text-right">
