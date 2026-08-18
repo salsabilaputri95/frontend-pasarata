@@ -197,6 +197,13 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
     fetchPriceReference(Number(form.commodity_id), Number(form.market_id), Number(form.year));
   }, [form.commodity_id, form.market_id, form.year]);
 
+  const parseNum = (val: string | number) => {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const str = String(val ?? '').replace(/,/g, '.').trim();
+    const n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+  };
+
   const applyPriceReference = () => {
     if (!priceRef?.found) return;
     setForm((prev) => ({
@@ -208,19 +215,19 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
   };
 
   const buildPayload = () => ({
-    year: Number(form.year),
-    market_id: Number(form.market_id),
-    category_id: Number(form.category_id),
-    commodity_id: Number(form.commodity_id),
+    year: parseInt(String(form.year), 10) || 2026,
+    market_id: parseInt(String(form.market_id), 10) || 0,
+    category_id: parseInt(String(form.category_id), 10) || 0,
+    commodity_id: parseInt(String(form.commodity_id), 10) || 0,
     brand_type: form.brand_type,
-    local_unit_id: Number(form.local_unit_id),
-    local_quantity: Number(form.local_quantity),
-    local_weight_kg: Number(form.local_weight_kg),
-    standard_unit_id: Number(form.standard_unit_id),
-    market_price: Number(form.market_price),
-    minimum_price: Number(form.minimum_price),
-    maximum_price: Number(form.maximum_price),
-    previous_price: Number(form.previous_price),
+    local_unit_id: parseInt(String(form.local_unit_id), 10) || 0,
+    local_quantity: parseNum(form.local_quantity) || 1,
+    local_weight_kg: parseNum(form.local_weight_kg) || 1,
+    standard_unit_id: parseInt(String(form.standard_unit_id), 10) || 0,
+    market_price: parseNum(form.market_price),
+    minimum_price: parseNum(form.minimum_price),
+    maximum_price: parseNum(form.maximum_price),
+    previous_price: parseNum(form.previous_price),
     notes: form.notes,
   });
 
@@ -277,14 +284,14 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
   };
 
   // 3 Pilar Calculation
-  const price = Number(form.market_price) || 0;
-  const qty = Number(form.local_quantity) || 1;
-  const weight = Number(form.local_weight_kg) || 0;
+  const price = parseNum(form.market_price);
+  const qty = parseNum(form.local_quantity) || 1;
+  const weight = parseNum(form.local_weight_kg);
   const totalWeight = qty * weight;
   const converted = totalWeight > 0 && price > 0 ? Math.round((price / totalWeight) * 100) / 100 : 0;
 
-  const minP = Number(form.minimum_price) || 0;
-  const maxP = Number(form.maximum_price) || 0;
+  const minP = parseNum(form.minimum_price);
+  const maxP = parseNum(form.maximum_price);
   const isBelow = minP > 0 && price > 0 && price < minP;
   const isAbove = maxP > 0 && price > maxP;
   const stdUnit = units.find((u) => u.id === Number(form.standard_unit_id))?.name || 'kg';
@@ -475,7 +482,7 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
             </span>
             <input
               type="number"
-              step="0.01"
+              step="any"
               min="0.01"
               value={form.local_quantity}
               onChange={(e) => handleChange('local_quantity', e.target.value)}
@@ -494,7 +501,7 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
             </span>
             <input
               type="number"
-              step="0.01"
+              step="any"
               min="0.001"
               value={form.local_weight_kg}
               onChange={(e) => handleChange('local_weight_kg', e.target.value)}
@@ -535,7 +542,7 @@ export function CollectorEntryForm({ editingEntry = null, onCancelEdit, onSaved 
             </span>
             <input
               type="number"
-              step="0.01"
+              step="any"
               value={form.market_price}
               onChange={(e) => handleChange('market_price', e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold"

@@ -172,6 +172,13 @@ export function EntryReviewPanel() {
     setEditForm(null);
   };
 
+  const parseNum = (val: string | number) => {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const str = String(val ?? '').replace(/,/g, '.').trim();
+    const n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+  };
+
   const handleEditSave = async () => {
     if (!editingEntry || !editForm) return;
     const token = localStorage.getItem('pasarata_token');
@@ -179,19 +186,19 @@ export function EntryReviewPanel() {
     setEditLoading(true);
     try {
       await api.adminUpdateEntry(token, editingEntry.id, {
-        year: Number(editForm.year),
-        market_id: Number(editForm.market_id),
-        category_id: Number(editForm.category_id),
-        commodity_id: Number(editForm.commodity_id),
+        year: parseInt(String(editForm.year), 10) || 2026,
+        market_id: parseInt(String(editForm.market_id), 10) || 0,
+        category_id: parseInt(String(editForm.category_id), 10) || 0,
+        commodity_id: parseInt(String(editForm.commodity_id), 10) || 0,
         brand_type: editForm.brand_type,
-        local_unit_id: Number(editForm.local_unit_id),
-        local_quantity: Number(editForm.local_quantity),
-        local_weight_kg: Number(editForm.local_weight_kg),
-        standard_unit_id: Number(editForm.standard_unit_id),
-        market_price: Number(editForm.market_price),
-        minimum_price: Number(editForm.minimum_price),
-        maximum_price: Number(editForm.maximum_price),
-        previous_price: Number(editForm.previous_price),
+        local_unit_id: parseInt(String(editForm.local_unit_id), 10) || 0,
+        local_quantity: parseNum(editForm.local_quantity) || 1,
+        local_weight_kg: parseNum(editForm.local_weight_kg) || 1,
+        standard_unit_id: parseInt(String(editForm.standard_unit_id), 10) || 0,
+        market_price: parseNum(editForm.market_price),
+        minimum_price: parseNum(editForm.minimum_price),
+        maximum_price: parseNum(editForm.maximum_price),
+        previous_price: parseNum(editForm.previous_price),
         notes: editForm.notes,
       });
       showMessage(`Entry #${editingEntry.id} berhasil diperbarui`);
