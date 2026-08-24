@@ -37,16 +37,55 @@ export interface DataEntry {
   updated_at?: string;
   market?: { id: number; name: string; district?: string };
   category?: { id: number; name: string };
-  commodity?: { id: number; name: string; code?: string };
-  local_unit?: { id: number; name: string };
-  standard_unit?: { id: number; name: string };
+  commodity?: Commodity;
+  local_unit?: Unit;
+  standard_unit?: Unit;
+}
+
+export interface Unit {
+  id: number;
+  name: string;
+  is_standard: boolean;
+  standard_value?: number;
+  standard_unit_name?: string;
+  conversion_factor?: number;
+  active?: boolean;
+}
+
+export interface Commodity {
+  id: number;
+  code: string;
+  name: string;
+  category_id: number;
+  standard_unit_id?: number;
+  standard_unit?: Unit;
+  brand_type?: string;
+  active?: boolean;
+  category?: { id?: number; name?: string };
+}
+
+export interface CommodityCategory {
+  id: number;
+  name: string;
+  type: string;
+  active?: boolean;
+}
+
+export interface Market {
+  id: number;
+  name: string;
+  district?: string;
+  province?: string;
+  nks?: string;
+  active?: boolean;
 }
 
 export interface CollectorDashboard {
   collector_id: number;
   year?: number;
   assigned_markets: number;
-  markets: Array<{ id: number; name: string; district?: string; nks?: string }>;
+  assigned_market?: { id: number; name: string; district?: string; nks?: string; province?: string };
+  markets: Array<{ id: number; name: string; district?: string; nks?: string; province?: string }>;
   total_entries: number;
   inactive_entries: number;
   warning_entries: number;

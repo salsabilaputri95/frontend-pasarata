@@ -104,7 +104,7 @@ export function AssignmentPanel() {
         <div>
           <h3 className="text-base font-bold text-slate-900">Penugasan Pasar</h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tetapkan pendata ke pasar tertentu agar akses dan tugas terbatas sesuai wilayah kerja yang ditentukan.
+            Tetapkan 1 pasar wilayah kerja untuk setiap petugas pendata. Memilih pasar baru untuk pendata yang sama akan otomatis memperbarui tugasnya.
           </p>
         </div>
         <div className="flex items-center gap-2">

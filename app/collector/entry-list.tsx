@@ -191,7 +191,7 @@ export function CollectorEntryList({
                     {entry.brand_type ? <div className="text-xs text-slate-500">{entry.brand_type}</div> : null}
                   </td>
                   <td className="px-3 py-2.5 font-medium">{formatPrice(entry.market_price)}</td>
-                  <td className="px-3 py-2.5 font-semibold text-emerald-800">{formatPrice(entry.converted_price)} / kg</td>
+                  <td className="px-3 py-2.5 font-semibold text-emerald-800">{formatPrice(entry.converted_price)} / {entry.standard_unit?.name || 'kg'}</td>
                   <td className="px-3 py-2.5">
                     <span className={warningClass(entry.warning_status)} title={warningHint(entry)}>
                       {warningLabel[entry.warning_status]}

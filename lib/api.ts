@@ -10,17 +10,24 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error ?? 'Request failed');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error ?? 'Request failed');
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err?.name === 'TypeError' || String(err?.message).toLowerCase().includes('fetch')) {
+      throw new Error('Gagal terhubung ke backend (http://localhost:8080). Pastikan backend Go sedang berjalan.');
+    }
+    throw err;
   }
-
-  return data as T;
 }
 
 async function requestBlob(path: string, options: RequestInit = {}, token?: string): Promise<Blob> {
@@ -228,15 +235,15 @@ export const api = {
     request<{ message: string; data: unknown }>(`/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
   setCategoryStatus: async (token: string, id: number, active: boolean) =>
     request<{ message: string; data: unknown }>(`/admin/categories/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
-  createCommodity: async (token: string, payload: { code: string; name: string; category_id: number; brand_type?: string }) =>
+  createCommodity: async (token: string, payload: { code: string; name: string; category_id: number; standard_unit_id?: number | null; brand_type?: string }) =>
     request<{ message: string; data: unknown }>('/admin/commodities', { method: 'POST', body: JSON.stringify(payload) }, token),
-  updateCommodity: async (token: string, id: number, payload: { code: string; name: string; category_id: number; brand_type?: string }) =>
+  updateCommodity: async (token: string, id: number, payload: { code: string; name: string; category_id: number; standard_unit_id?: number | null; brand_type?: string }) =>
     request<{ message: string; data: unknown }>(`/admin/commodities/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
   setCommodityStatus: async (token: string, id: number, active: boolean) =>
     request<{ message: string; data: unknown }>(`/admin/commodities/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
-  createUnit: async (token: string, payload: { name: string; is_standard?: boolean; conversion_factor?: number }) =>
+  createUnit: async (token: string, payload: { name: string; is_standard?: boolean; standard_value?: number; standard_unit_name?: string; conversion_factor?: number }) =>
     request<{ message: string; data: unknown }>('/admin/units', { method: 'POST', body: JSON.stringify(payload) }, token),
-  updateUnit: async (token: string, id: number, payload: { name: string; is_standard?: boolean; conversion_factor?: number }) =>
+  updateUnit: async (token: string, id: number, payload: { name: string; is_standard?: boolean; standard_value?: number; standard_unit_name?: string; conversion_factor?: number }) =>
     request<{ message: string; data: unknown }>(`/admin/units/${id}`, { method: 'PUT', body: JSON.stringify(payload) }, token),
   setUnitStatus: async (token: string, id: number, active: boolean) =>
     request<{ message: string; data: unknown }>(`/admin/units/${id}/status`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),

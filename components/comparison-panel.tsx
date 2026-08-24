@@ -8,7 +8,10 @@ const DEFAULT_YEAR = 2026;
 
 type ComparisonRow = {
   market_name: string;
+  commodity_code?: string;
   commodity_name: string;
+  standard_weight?: string;
+  standard_unit_name?: string;
   current_year: number;
   previous_year: number;
   current_average: number;
@@ -154,6 +157,7 @@ export function ComparisonPanel() {
               <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                 <th className="py-3 px-4">PASAR</th>
                 <th className="py-3 px-4">KOMODITAS</th>
+                <th className="py-3 px-4">BERAT STANDAR</th>
                 <th className="py-3 px-4">RATA-RATA {year - 1}</th>
                 <th className="py-3 px-4">RATA-RATA {year}</th>
                 <th className="py-3 px-4">DELTA (SELISIH)</th>
@@ -164,7 +168,15 @@ export function ComparisonPanel() {
               {rows.map((r, idx) => (
                 <tr key={idx} className="hover:bg-slate-50 transition">
                   <td className="py-3 px-4 font-bold text-slate-900">{r.market_name}</td>
-                  <td className="py-3 px-4 text-slate-700 font-medium">{r.commodity_name}</td>
+                  <td className="py-3 px-4 text-slate-700 font-medium">
+                    <div>{r.commodity_name}</div>
+                    {r.commodity_code ? <span className="text-[10px] text-slate-400 font-mono">ID: {r.commodity_code}</span> : null}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="inline-flex items-center rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                      {r.standard_weight || '1 kg'}
+                    </span>
+                  </td>
                   <td className="py-3 px-4 text-slate-500">
                     Rp {Number(r.previous_average).toLocaleString('id-ID')}
                   </td>

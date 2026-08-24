@@ -369,8 +369,13 @@ export function EntryReviewPanel() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="text-xs font-bold text-slate-900">
-                        #{entry.id} • {entry.commodity?.name ?? `Komoditas #${entry.commodity_id}`}
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="rounded bg-slate-900 text-white font-mono px-1.5 py-0.2 text-[10px] font-bold">
+                          ID: {entry.commodity?.code ?? entry.commodity_id}
+                        </span>
+                        <div className="text-xs font-bold text-slate-900">
+                          #{entry.id} • {entry.commodity?.name ?? `Komoditas #${entry.commodity_id}`}
+                        </div>
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {entry.market?.name ?? `Pasar #${entry.market_id}`} • Petugas #{entry.collector_id}

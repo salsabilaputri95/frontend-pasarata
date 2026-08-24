@@ -106,12 +106,14 @@ export default function CollectorDashboardPage() {
               <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-[#E0F2FE] text-[#0284C7]">
                 <StoreIcon className="h-6 w-6" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs font-semibold text-sky-800">Pasar Ditugaskan</div>
-                <div className="text-2xl sm:text-3xl font-black text-sky-950 leading-tight">
-                  {loading ? '...' : (summary?.assigned_markets ?? 0)}
+                <div className="text-base sm:text-lg font-black text-sky-950 truncate">
+                  {loading ? '...' : (summary?.assigned_market?.name || summary?.markets?.[0]?.name || (summary?.assigned_markets ? `${summary.assigned_markets} Pasar` : 'Belum Ditugaskan'))}
                 </div>
-                <div className="text-[11px] font-medium text-sky-700/80">Wilayah tugas aktif</div>
+                <div className="text-[11px] font-medium text-sky-700/80 truncate">
+                  {summary?.assigned_market?.district ? `${summary.assigned_market.district} (NKS: ${summary.assigned_market.nks || '-'})` : 'Wilayah tugas aktif'}
+                </div>
               </div>
             </div>
 

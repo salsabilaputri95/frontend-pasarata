@@ -32,20 +32,25 @@ type CommodityRecord = {
   code: string;
   name: string;
   category_id: number;
+  standard_unit_id?: number | null;
+  standard_unit?: { id?: number; name?: string };
   brand_type?: string;
   active?: boolean;
-  category?: { name?: string };
+  category?: { id?: number; name?: string };
 };
 
 type UnitRecord = {
   id: number;
   name: string;
   is_standard: boolean;
+  standard_value?: number;
+  standard_unit_name?: string;
   conversion_factor: number;
   active?: boolean;
 };
 
-type ModalField = { key: string; label: string; type?: string; options?: string[] };
+type OptionItem = { label: string; value: string };
+type ModalField = { key: string; label: string; type?: string; options?: (string | OptionItem)[] };
 
 function EditModal({
   title,
@@ -82,7 +87,11 @@ function EditModal({
                   value={String(form[field.key] ?? '')}
                   onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
                 >
-                  {field.options.map((o) => <option key={o}>{o}</option>)}
+                  {field.options.map((o) => {
+                    const label = typeof o === 'string' ? o : o.label;
+                    const val = typeof o === 'string' ? o : o.value;
+                    return <option key={val} value={val}>{label}</option>;
+                  })}
                 </select>
               </label>
             ) : field.type === 'checkbox' ? (
@@ -101,6 +110,7 @@ function EditModal({
                 <input
                   id={`edit-field-${field.key}`}
                   type={field.type ?? 'text'}
+                  step={field.type === 'number' ? 'any' : undefined}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none"
                   value={String(form[field.key] ?? '')}
                   onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
@@ -139,8 +149,8 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
   const [collectorForm, setCollectorForm] = useState({ username: '', password: '', full_name: '' });
   const [marketForm, setMarketForm] = useState({ province: '', district: '', nks: '', name: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'Makanan' });
-  const [commodityForm, setCommodityForm] = useState({ code: '', name: '', category_id: '', brand_type: '' });
-  const [unitForm, setUnitForm] = useState({ name: '', is_standard: false, conversion_factor: '1' });
+  const [commodityForm, setCommodityForm] = useState({ code: '', name: '', category_id: '', standard_unit_id: '', brand_type: '' });
+  const [unitForm, setUnitForm] = useState({ name: '', is_standard: false, standard_value: '1', standard_unit_name: 'kg', conversion_factor: '1' });
 
   // Edit modal
   const [editModal, setEditModal] = useState<{
@@ -217,14 +227,19 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
   const submitCommodity = async () => {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
+    if (!commodityForm.name.trim() || !commodityForm.code.trim() || !commodityForm.category_id) {
+      showMsg('Kode, nama, dan kategori komoditas wajib diisi', true);
+      return;
+    }
     try {
       await api.createCommodity(token, {
-        code: commodityForm.code,
-        name: commodityForm.name,
+        code: commodityForm.code.trim(),
+        name: commodityForm.name.trim(),
         category_id: Number(commodityForm.category_id),
-        brand_type: commodityForm.brand_type,
+        standard_unit_id: commodityForm.standard_unit_id ? Number(commodityForm.standard_unit_id) : null,
+        brand_type: commodityForm.brand_type.trim(),
       });
-      setCommodityForm({ code: '', name: '', category_id: '', brand_type: '' });
+      setCommodityForm({ code: '', name: '', category_id: '', standard_unit_id: '', brand_type: '' });
       showMsg('Komoditas berhasil dibuat');
       await loadData();
     } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal membuat komoditas', true); }
@@ -233,13 +248,22 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
   const submitUnit = async () => {
     const token = localStorage.getItem('pasarata_token');
     if (!token) return;
+    if (!unitForm.name.trim()) {
+      showMsg('Nama satuan wajib diisi', true);
+      return;
+    }
     try {
+      const isStd = Boolean(unitForm.is_standard);
+      const stdVal = isStd ? 1 : Number(unitForm.standard_value) || 1;
+      const stdUnitName = isStd ? unitForm.name.trim().toLowerCase() : unitForm.standard_unit_name.trim() || 'kg';
       await api.createUnit(token, {
-        name: unitForm.name,
-        is_standard: unitForm.is_standard,
-        conversion_factor: Number(unitForm.conversion_factor),
+        name: unitForm.name.trim(),
+        is_standard: isStd,
+        standard_value: stdVal,
+        standard_unit_name: stdUnitName,
+        conversion_factor: isStd && (stdUnitName === 'kg' || unitForm.name.toLowerCase() === 'kg') ? 1 : Number(unitForm.conversion_factor) || 1,
       });
-      setUnitForm({ name: '', is_standard: false, conversion_factor: '1' });
+      setUnitForm({ name: '', is_standard: false, standard_value: '1', standard_unit_name: 'kg', conversion_factor: '1' });
       showMsg('Satuan berhasil dibuat');
       await loadData();
     } catch (error) { showMsg(error instanceof Error ? error.message : 'Gagal membuat satuan', true); }
@@ -297,15 +321,29 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
   };
 
   const openEditCommodity = (cm: CommodityRecord) => {
+    const standardUnitOptions = [
+      { label: '-- Tidak Ada Satuan Standar --', value: '' },
+      ...units.filter((u) => u.is_standard !== false).map((u) => ({ label: `${u.name} (Standar)`, value: String(u.id) })),
+    ];
+    const categoryOptions = categories.map((c) => ({ label: c.name, value: String(c.id) }));
+
     setEditModal({
       type: 'commodity',
       id: cm.id,
       fields: [
         { key: 'name', label: 'Nama Komoditas' },
         { key: 'code', label: 'Kode' },
+        { key: 'category_id', label: 'Kategori', options: categoryOptions },
+        { key: 'standard_unit_id', label: 'Satuan Standar Acuan', options: standardUnitOptions },
         { key: 'brand_type', label: 'Merek / Jenis' },
       ],
-      values: { name: cm.name, code: cm.code, brand_type: cm.brand_type ?? '' },
+      values: {
+        name: cm.name,
+        code: cm.code,
+        category_id: String(cm.category_id),
+        standard_unit_id: cm.standard_unit_id ? String(cm.standard_unit_id) : '',
+        brand_type: cm.brand_type ?? '',
+      },
     });
   };
 
@@ -315,10 +353,18 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
       id: u.id,
       fields: [
         { key: 'name', label: 'Nama Satuan' },
+        { key: 'is_standard', label: 'Merupakan Satuan Standar Acuan (mis. Gram, Kg, Ml)', type: 'checkbox' },
+        { key: 'standard_value', label: 'Nilai/Bobot Standar per Satuan (contoh: 50 untuk genggam, 0.8 untuk kaleng, 1 untuk gram)', type: 'number' },
+        { key: 'standard_unit_name', label: 'Satuan Standar yang Digunakan (contoh: gram, kg, ml)' },
         { key: 'conversion_factor', label: 'Faktor Konversi (kg)', type: 'number' },
-        { key: 'is_standard', label: 'Satuan Standar', type: 'checkbox' },
       ],
-      values: { name: u.name, conversion_factor: String(u.conversion_factor), is_standard: u.is_standard },
+      values: {
+        name: u.name,
+        is_standard: u.is_standard,
+        standard_value: String(u.standard_value ?? 1),
+        standard_unit_name: u.standard_unit_name ?? '',
+        conversion_factor: String(u.conversion_factor ?? 1),
+      },
     });
   };
 
@@ -344,14 +390,18 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
         await api.updateCommodity(token, editModal.id, {
           name: String(vals.name),
           code: String(vals.code),
-          brand_type: String(vals.brand_type),
-          category_id: 1,
+          brand_type: String(vals.brand_type ?? ''),
+          category_id: vals.category_id ? Number(vals.category_id) : 1,
+          standard_unit_id: vals.standard_unit_id ? Number(vals.standard_unit_id) : null,
         });
       } else if (editModal.type === 'unit') {
+        const isStd = Boolean(vals.is_standard);
         await api.updateUnit(token, editModal.id, {
           name: String(vals.name),
-          conversion_factor: Number(vals.conversion_factor),
-          is_standard: Boolean(vals.is_standard),
+          is_standard: isStd,
+          standard_value: isStd ? 1 : Number(vals.standard_value) || 1,
+          standard_unit_name: String(vals.standard_unit_name ?? ''),
+          conversion_factor: Number(vals.conversion_factor) || 1,
         });
       }
       showMsg('Data berhasil diperbarui');
@@ -450,32 +500,90 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
             )}
 
             {activeAddTab === 'commodity' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <input placeholder="Kode (mis. BERAS-01)" className={inputClass} value={commodityForm.code} onChange={(e) => setCommodityForm({ ...commodityForm, code: e.target.value })} />
-                <input placeholder="Nama Komoditas" className={inputClass} value={commodityForm.name} onChange={(e) => setCommodityForm({ ...commodityForm, name: e.target.value })} />
-                <select className={inputClass} value={commodityForm.category_id} onChange={(e) => setCommodityForm({ ...commodityForm, category_id: e.target.value })}>
-                  <option value="">Pilih Kategori</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <input placeholder="Merek / Jenis (Opsional)" className={inputClass} value={commodityForm.brand_type} onChange={(e) => setCommodityForm({ ...commodityForm, brand_type: e.target.value })} />
-                <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
-                  <button onClick={submitCommodity} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
-                    Simpan Komoditas
-                  </button>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <input placeholder="Kode (mis. BERAS-01)" className={inputClass} value={commodityForm.code} onChange={(e) => setCommodityForm({ ...commodityForm, code: e.target.value })} />
+                  <input placeholder="Nama Komoditas" className={inputClass} value={commodityForm.name} onChange={(e) => setCommodityForm({ ...commodityForm, name: e.target.value })} />
+                  <select className={inputClass} value={commodityForm.category_id} onChange={(e) => setCommodityForm({ ...commodityForm, category_id: e.target.value })}>
+                    <option value="">Pilih Kategori</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <select className={inputClass} value={commodityForm.standard_unit_id} onChange={(e) => setCommodityForm({ ...commodityForm, standard_unit_id: e.target.value })}>
+                    <option value="">Pilih Satuan Standar Acuan</option>
+                    {units.filter((u) => u.is_standard !== false).map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} (Satuan Standar)</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input placeholder="Merek / Jenis (Opsional)" className={inputClass} value={commodityForm.brand_type} onChange={(e) => setCommodityForm({ ...commodityForm, brand_type: e.target.value })} />
+                  <div className="flex justify-end items-center">
+                    <button onClick={submitCommodity} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition shadow-xs">
+                      Simpan Komoditas
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {activeAddTab === 'unit' && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input placeholder="Nama Satuan (mis. Liter / Ikat)" className={inputClass} value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} />
-                <input placeholder="Faktor Konversi (kg)" type="number" step="0.01" className={inputClass} value={unitForm.conversion_factor} onChange={(e) => setUnitForm({ ...unitForm, conversion_factor: e.target.value })} />
-                <label className="flex items-center gap-2 text-xs text-slate-700 px-1">
-                  <input type="checkbox" checked={unitForm.is_standard} onChange={(e) => setUnitForm({ ...unitForm, is_standard: e.target.checked })} />
-                  Satuan Standar Universal
-                </label>
-                <div className="sm:col-span-3 flex justify-end">
-                  <button onClick={submitUnit} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">Nama Satuan</label>
+                    <input placeholder="mis. Genggam tangan, Kaleng, Gram, Kg" className={inputClass} value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">Nilai / Bobot Standar</label>
+                    <input
+                      placeholder="mis. 50 (genggam), 0.80 (kaleng), 1 (gram)"
+                      type="number"
+                      step="any"
+                      className={inputClass}
+                      disabled={unitForm.is_standard}
+                      value={unitForm.is_standard ? '1' : unitForm.standard_value}
+                      onChange={(e) => setUnitForm({ ...unitForm, standard_value: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">Satuan Standar Acuan</label>
+                    <input
+                      placeholder="mis. gram, kg, ml, liter"
+                      className={inputClass}
+                      disabled={unitForm.is_standard}
+                      value={unitForm.is_standard ? unitForm.name.toLowerCase() : unitForm.standard_unit_name}
+                      onChange={(e) => setUnitForm({ ...unitForm, standard_unit_name: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={unitForm.is_standard}
+                      onChange={(e) => setUnitForm({
+                        ...unitForm,
+                        is_standard: e.target.checked,
+                        standard_value: e.target.checked ? '1' : unitForm.standard_value,
+                        standard_unit_name: e.target.checked ? unitForm.name.toLowerCase() : unitForm.standard_unit_name,
+                      })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    Merupakan Satuan Standar Acuan (Contoh: Gram, Kilogram, Mililiter)
+                  </label>
+
+                  <div className="text-[11px] text-slate-500">
+                    {unitForm.is_standard ? (
+                      <span className="text-blue-700 font-semibold">● Satuan standar universal (nilai = 1)</span>
+                    ) : (
+                      <span>Rumus: 1 {unitForm.name || '[Satuan]'} = {unitForm.standard_value || '1'} {unitForm.standard_unit_name || 'kg'}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button onClick={submitUnit} className="rounded-xl bg-[#0066FF] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 transition shadow-xs">
                     Simpan Satuan
                   </button>
                 </div>
@@ -516,15 +624,31 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
           </div>
 
           <div className="mt-4">
+            {activeAddTab === 'collector' && null}
             {activeListTab === 'commodity' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {commodities.map((c) => (
-                  <div key={c.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
+                  <div key={c.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2 shadow-2xs hover:border-slate-300 transition">
                     <div>
-                      <div className="text-xs font-bold text-slate-900">{c.name}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{c.code} • {c.category?.name ?? 'Umum'}</div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="rounded bg-slate-900 text-white font-mono px-1.5 py-0.5 text-[10px] font-black tracking-wider">
+                          ID: {c.code}
+                        </span>
+                        <div className="text-xs font-bold text-slate-900">{c.name}</div>
+                      </div>
+                      <div className="text-[11px] text-slate-500">Kategori: {c.category?.name ?? 'Umum'}</div>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <span className="rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                          Standar: {c.standard_unit?.name || 'Belum diatur'}
+                        </span>
+                        {c.brand_type && (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                            {c.brand_type}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => openEditCommodity(c)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
                       <button onClick={() => toggleMasterStatus('commodity', c.id, c.active !== false, c.name)} className="text-[11px] font-semibold text-slate-500 hover:bg-slate-100 px-2 py-1 rounded">
                         {c.active !== false ? 'Aktif' : 'Nonaktif'}
@@ -575,11 +699,31 @@ export function AdminManagementPanel({ mode = 'all' }: { mode?: 'add' | 'list' |
                 {units.map((u) => (
                   <div key={u.id} className="rounded-xl border border-slate-200/70 bg-[#F8FAFC] p-3.5 flex items-start justify-between gap-2">
                     <div>
-                      <div className="text-xs font-bold text-slate-900">{u.name} {u.is_standard && <span className="text-[10px] text-blue-600">(Standar)</span>}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">Konversi: {u.conversion_factor} kg</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">{u.name}</span>
+                        {u.is_standard ? (
+                          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.2 text-[10px] font-bold text-emerald-700">
+                            Standar
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.2 text-[10px] font-bold text-amber-700">
+                            Lokal
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-600 mt-1 font-medium">
+                        {u.is_standard ? (
+                          <span>1 {u.name} = 1 {u.name}</span>
+                        ) : (
+                          <span>1 {u.name} = {u.standard_value ?? 1} {u.standard_unit_name || 'kg'}</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => openEditUnit(u)} className="text-[11px] font-semibold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">Edit</button>
+                      <button onClick={() => toggleMasterStatus('unit', u.id, u.active !== false, u.name)} className="text-[11px] font-semibold text-slate-500 hover:bg-slate-100 px-2 py-1 rounded">
+                        {u.active !== false ? 'Aktif' : 'Nonaktif'}
+                      </button>
                     </div>
                   </div>
                 ))}
